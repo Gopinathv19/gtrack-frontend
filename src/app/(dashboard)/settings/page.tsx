@@ -5,6 +5,7 @@ import { Building2, Mail, Shield, User } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { WorkspaceSwitcher } from "@/components/shared/workspace-switcher";
+import { CreateOrganizationDialog } from "@/components/shared/create-organization-dialog";
 import {
   Card,
   CardContent,
@@ -22,8 +23,11 @@ import { useWorkspace } from "@/hooks/use-workspace";
 import { getInitials, truncateId } from "@/lib/utils";
 
 export default function SettingsPage() {
-  const { email, userId, roles } = useAuth();
+  const { email, userId, roles, organizationId: jwtOrgId } = useAuth();
   const { organizationId } = useWorkspace();
+  // Only users who don't yet belong to an organization can create one.
+  // (The backend rejects org creation for users who already have one.)
+  const canCreateOrg = !jwtOrgId;
 
   const orgQ = useQuery({
     queryKey: ["organization", organizationId],
@@ -98,11 +102,14 @@ export default function SettingsPage() {
 
         <TabsContent value="organization" className="mt-4 space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Active workspace</CardTitle>
-              <CardDescription>
-                Choose which org/instance/group context the app should use.
-              </CardDescription>
+            <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+              <div>
+                <CardTitle>Active workspace</CardTitle>
+                <CardDescription>
+                  Choose which org/instance/group context the app should use.
+                </CardDescription>
+              </div>
+              {canCreateOrg && <CreateOrganizationDialog />}
             </CardHeader>
             <CardContent>
               <WorkspaceSwitcher />

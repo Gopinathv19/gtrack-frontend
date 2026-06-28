@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import type { TokenPair, User } from "@/types";
+import type { TokenPair } from "@/types";
 
 export interface LoginPayload {
   email: string;
@@ -31,7 +31,7 @@ export const authService = {
 
   acceptInvite: ({ token, name, password }: AcceptInvitePayload) =>
     apiClient
-      .post<User>(
+      .post<TokenPair>(
         `/invites/accept`,
         { name, password },
         { params: { token } },

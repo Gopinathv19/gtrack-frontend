@@ -4,7 +4,8 @@ import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
   title: string;
-  description?: string;
+  /** Plain text or any ReactNode (e.g. inline metadata like "Created by Jane"). */
+  description?: React.ReactNode;
   actions?: React.ReactNode;
   className?: string;
 }

@@ -46,7 +46,8 @@ export default function DashboardPage() {
   const delivered = assets.filter(
     (a) => a.status === AssetStatus.DELIVERED || a.status === AssetStatus.RECEIVED,
   ).length;
-  const sacksOpen = sacks.filter((s) => s.status !== SackStatus.CLOSED).length;
+  // "Open" = anything that hasn't been received yet (terminal state).
+  const sacksOpen = sacks.filter((s) => s.status !== SackStatus.RECEIVED).length;
 
   const recentAssets = [...assets]
     .sort((a, b) => +new Date(b.updated_at) - +new Date(a.updated_at))
@@ -94,7 +95,7 @@ export default function DashboardPage() {
           label="Open sacks"
           value={sacksQuery.isLoading ? "—" : sacksOpen}
           icon={Boxes}
-          hint="Not yet closed"
+          hint="Not yet received"
         />
       </div>
 

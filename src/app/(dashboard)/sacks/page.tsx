@@ -12,6 +12,7 @@ import { Pagination } from "@/components/shared/pagination";
 import { EmptyState } from "@/components/shared/empty-state";
 import { DataTableSkeleton } from "@/components/shared/data-table-skeleton";
 import { CreateSackDialog } from "@/components/shared/create-sack-dialog";
+import { SearchInput } from "@/components/shared/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
@@ -31,6 +32,7 @@ import {
 import { sacksService } from "@/services/sacks.service";
 import { SackStatus } from "@/types";
 import { useWorkspace } from "@/hooks/use-workspace";
+import { useDebounce } from "@/hooks/use-debounce";
 import { DEFAULT_PAGE_SIZE, ROUTES } from "@/constants";
 import { formatDateTime, truncateId } from "@/lib/utils";
 
@@ -46,15 +48,27 @@ export default function SacksPage() {
   const { groupId } = useWorkspace();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<SackStatus | "ALL">("ALL");
+  const [ticketSearch, setTicketSearch] = useState("");
+  const debouncedTicket = useDebounce(ticketSearch.trim(), 300);
 
   const query = useQuery({
-    queryKey: ["sacks", { page, status, groupId, per_page: DEFAULT_PAGE_SIZE }],
+    queryKey: [
+      "sacks",
+      {
+        page,
+        status,
+        groupId,
+        ticket_id: debouncedTicket || undefined,
+        per_page: DEFAULT_PAGE_SIZE,
+      },
+    ],
     queryFn: () =>
       sacksService.list({
         page,
         per_page: DEFAULT_PAGE_SIZE,
         status: status === "ALL" ? undefined : status,
         group_id: groupId ?? undefined,
+        ticket_id: debouncedTicket || undefined,
       }),
   });
 
@@ -72,24 +86,35 @@ export default function SacksPage() {
         <CardContent className="space-y-4 pt-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <WorkspaceSwitcher compact />
-            <Select
-              value={status}
-              onValueChange={(v) => {
-                setStatus(v as SackStatus | "ALL");
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="h-9 w-full sm:w-44">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUSES.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>
-                    {s.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <SearchInput
+                value={ticketSearch}
+                onChange={(v) => {
+                  setTicketSearch(v);
+                  setPage(1);
+                }}
+                placeholder="Search by ticket ID…"
+                className="w-full sm:w-56"
+              />
+              <Select
+                value={status}
+                onValueChange={(v) => {
+                  setStatus(v as SackStatus | "ALL");
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-9 w-full sm:w-44">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUSES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {query.isLoading ? (

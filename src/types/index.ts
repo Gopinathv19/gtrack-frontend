@@ -16,10 +16,9 @@ export type AssetStatus = (typeof AssetStatus)[keyof typeof AssetStatus];
 
 export const SackStatus = {
   CREATED: "CREATED",
-  PICKED_UP: "PICKED_UP",
   IN_TRANSIT: "IN_TRANSIT",
   DELIVERED: "DELIVERED",
-  CLOSED: "CLOSED",
+  RECEIVED: "RECEIVED",
 } as const;
 export type SackStatus = (typeof SackStatus)[keyof typeof SackStatus];
 
@@ -40,9 +39,8 @@ export type AssetMovementAction =
 export const SackMovementAction = {
   CREATED: "CREATED",
   PICKED_UP: "PICKED_UP",
-  IN_TRANSIT: "IN_TRANSIT",
   DELIVERED: "DELIVERED",
-  CLOSED: "CLOSED",
+  RECEIVED: "RECEIVED",
 } as const;
 export type SackMovementAction =
   (typeof SackMovementAction)[keyof typeof SackMovementAction];
@@ -185,6 +183,14 @@ export interface Sack {
   group_id: string;
   status: SackStatus;
   created_by: string;
+  /** Source / origin location assigned by the store. */
+  origin_location_id?: string | null;
+  origin_location_name?: string | null;
+  /** Intended drop-off location assigned by the store. */
+  destination_location_id?: string | null;
+  destination_location_name?: string | null;
+  created_by_name?: string | null;
+  created_by_email?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -194,8 +200,12 @@ export interface SackMovement {
   sack_id: string;
   action: SackMovementAction;
   performed_by: string;
+  performed_by_name?: string | null;
+  performed_by_email?: string | null;
   from_location_id?: string | null;
+  from_location_name?: string | null;
   to_location_id?: string | null;
+  to_location_name?: string | null;
   remarks?: string | null;
   created_at: string;
 }

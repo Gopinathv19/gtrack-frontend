@@ -45,11 +45,13 @@ import {
   type InstanceCreateFormValues,
 } from "@/schemas/organization.schema";
 import { useWorkspace } from "@/hooks/use-workspace";
+import { useIsOrgAdmin } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { formatDateTime, truncateId } from "@/lib/utils";
 
 export default function InstancesPage() {
   const { organizationId } = useWorkspace();
+  const isOrgAdmin = useIsOrgAdmin();
   const [open, setOpen] = useState(false);
   const qc = useQueryClient();
 
@@ -85,6 +87,7 @@ export default function InstancesPage() {
         title="Instances"
         description="Logical environments within an organization (e.g. production, staging, regions)."
         actions={
+          isOrgAdmin ? (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button disabled={!organizationId}>
@@ -146,6 +149,7 @@ export default function InstancesPage() {
               </Form>
             </DialogContent>
           </Dialog>
+          ) : null
         }
       />
 

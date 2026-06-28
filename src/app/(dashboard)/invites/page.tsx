@@ -53,11 +53,13 @@ import {
   type InviteCreateFormValues,
 } from "@/schemas/invite.schema";
 import { useWorkspace } from "@/hooks/use-workspace";
+import { useIsOrgAdmin } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/utils";
 
 export default function InvitesPage() {
   const { groupId } = useWorkspace();
+  const isOrgAdmin = useIsOrgAdmin();
   const [open, setOpen] = useState(false);
   const qc = useQueryClient();
 
@@ -117,6 +119,7 @@ export default function InvitesPage() {
         title="Invites"
         description="Invite teammates to join groups within your organization."
         actions={
+          isOrgAdmin ? (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button disabled={!groupId}>
@@ -196,6 +199,7 @@ export default function InvitesPage() {
               </Form>
             </DialogContent>
           </Dialog>
+          ) : null
         }
       />
 

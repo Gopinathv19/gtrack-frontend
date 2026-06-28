@@ -25,6 +25,7 @@ import {
 } from "@/schemas/auth.schema";
 import { authService } from "@/services/auth.service";
 import { getApiErrorMessage } from "@/lib/api-client";
+import { useAuthStore } from "@/store/auth-store";
 import { ROUTES } from "@/constants";
 
 function AcceptInviteInner() {
@@ -32,6 +33,7 @@ function AcceptInviteInner() {
   const params = useSearchParams();
   const token = params.get("token") ?? "";
   const [showPassword, setShowPassword] = useState(false);
+  const setAccessToken = useAuthStore((s) => s.setAccessToken);
 
   const form = useForm<AcceptInviteFormValues>({
     resolver: zodResolver(acceptInviteSchema),
@@ -41,9 +43,12 @@ function AcceptInviteInner() {
   const mutation = useMutation({
     mutationFn: (v: AcceptInviteFormValues) =>
       authService.acceptInvite({ token, name: v.name, password: v.password }),
-    onSuccess: () => {
-      toast.success("Invite accepted — please sign in.");
-      router.replace(ROUTES.LOGIN);
+    onSuccess: (tokens) => {
+      // Backend now returns a TokenPair and sets the refresh cookie,
+      // so we can drop the new member straight into the app.
+      setAccessToken(tokens.access_token);
+      toast.success("Welcome aboard!");
+      router.replace(ROUTES.DASHBOARD);
     },
     onError: (err) => {
       toast.error(getApiErrorMessage(err, "Could not accept invite"));

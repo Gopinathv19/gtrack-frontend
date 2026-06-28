@@ -45,11 +45,13 @@ import {
   type GroupCreateFormValues,
 } from "@/schemas/organization.schema";
 import { useWorkspace } from "@/hooks/use-workspace";
+import { useIsOrgAdmin } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { formatDateTime, truncateId } from "@/lib/utils";
 
 export default function GroupsPage() {
   const { instanceId } = useWorkspace();
+  const isOrgAdmin = useIsOrgAdmin();
   const [open, setOpen] = useState(false);
   const qc = useQueryClient();
 
@@ -84,6 +86,7 @@ export default function GroupsPage() {
         title="Groups"
         description="Operational units within an instance — e.g. depots, regions, teams."
         actions={
+          isOrgAdmin ? (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button disabled={!instanceId}>
@@ -145,6 +148,7 @@ export default function GroupsPage() {
               </Form>
             </DialogContent>
           </Dialog>
+          ) : null
         }
       />
 
