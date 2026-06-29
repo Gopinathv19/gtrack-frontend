@@ -39,3 +39,23 @@ export function useCanShiftSacks(): boolean {
 export function useCanReceiveSacks(): boolean {
   return useHasRole(RoleName.SYSADMIN, RoleName.ORG_ADMIN);
 }
+
+/**
+ * Reverse-leg per-asset permission helpers. Each step has a different
+ * role gate on the backend; keep these aligned with sacks.py:
+ *
+ *   1. mark-return     — SYSADMIN, ORG_ADMIN
+ *   2. pickup-return   — SHIFT_PERSON, ORG_ADMIN
+ *   3. receive-return  — STORE_MAINTAINER, ORG_ADMIN
+ */
+export function useCanMarkAssetForReturn(): boolean {
+  return useHasRole(RoleName.SYSADMIN, RoleName.ORG_ADMIN);
+}
+
+export function useCanPickupReturnAsset(): boolean {
+  return useHasRole(RoleName.SHIFT_PERSON, RoleName.ORG_ADMIN);
+}
+
+export function useCanReceiveReturnAsset(): boolean {
+  return useHasRole(RoleName.STORE_MAINTAINER, RoleName.ORG_ADMIN);
+}

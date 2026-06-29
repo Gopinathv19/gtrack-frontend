@@ -45,6 +45,7 @@ import {
   type LocationCreateFormValues,
 } from "@/schemas/location.schema";
 import { useWorkspace } from "@/hooks/use-workspace";
+import { useCanManageSacks } from "@/hooks/use-permissions";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { formatDateTime, truncateId } from "@/lib/utils";
 
@@ -52,6 +53,10 @@ export default function LocationsPage() {
   const { groupId } = useWorkspace();
   const [open, setOpen] = useState(false);
   const qc = useQueryClient();
+  // Locations can only be created/edited by ORG_ADMIN or STORE_MAINTAINER.
+  // useCanManageSacks() matches those exact roles, so we reuse it here
+  // instead of growing a parallel "useCanManageLocations" hook.
+  const canManageLocations = useCanManageSacks();
 
   const query = useQuery({
     queryKey: ["locations", { groupId }],
@@ -106,6 +111,7 @@ export default function LocationsPage() {
         title="Locations"
         description="Physical or logical locations within your groups."
         actions={
+          canManageLocations ? (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button disabled={!groupId}>
@@ -208,6 +214,7 @@ export default function LocationsPage() {
               </Form>
             </DialogContent>
           </Dialog>
+          ) : null
         }
       />
 

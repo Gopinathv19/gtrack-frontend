@@ -4,16 +4,29 @@ import type {
   Page,
   Sack,
   SackAssetsAddResult,
+  SackLifecycle,
   SackMovement,
   SackStatus,
 } from "@/types";
 
 export interface ListSacksParams {
   status?: SackStatus;
+  /** Filter by derived lifecycle (ACTIVE / PENDING_RETURN / CLOSED). */
+  lifecycle?: SackLifecycle;
   group_id?: string;
   ticket_id?: string;
   page?: number;
   per_page?: number;
+}
+
+/**
+ * Body for any of the three per-asset reverse-leg actions
+ * (mark-return / pickup-return / receive-return). All three accept the
+ * same shape — an optional location override + free-form remarks.
+ */
+export interface ReturnAssetActionPayload {
+  location_id?: string | null;
+  remarks?: string;
 }
 
 export interface SackActionPayload {
@@ -88,4 +101,57 @@ export const sacksService = {
 
   listMovements: (id: string) =>
     apiClient.get<SackMovement[]>(`/sacks/${id}/movements`).then((r) => r.data),
+
+  /**
+   * Reverse leg step 1 — sysadmin / org admin marks the RECEIVED asset
+   * as packed for return. ``asset.status`` flips to PACKED_FOR_RETURN.
+   * Backend: ``POST /sacks/{sackId}/assets/{assetId}/mark-return``.
+   */
+  markAssetForReturn: (
+    sackId: string,
+    assetId: string,
+    payload: ReturnAssetActionPayload = {},
+  ) =>
+    apiClient
+      .post<Sack>(
+        `/sacks/${sackId}/assets/${assetId}/mark-return`,
+        payload,
+      )
+      .then((r) => r.data),
+
+  /**
+   * Reverse leg step 2 — shift person / org admin picks up the
+   * PACKED_FOR_RETURN asset. ``asset.status`` flips to IN_TRANSIT.
+   * Backend: ``POST /sacks/{sackId}/assets/{assetId}/pickup-return``.
+   */
+  pickupReturnAsset: (
+    sackId: string,
+    assetId: string,
+    payload: ReturnAssetActionPayload = {},
+  ) =>
+    apiClient
+      .post<Sack>(
+        `/sacks/${sackId}/assets/${assetId}/pickup-return`,
+        payload,
+      )
+      .then((r) => r.data),
+
+  /**
+   * Reverse leg step 3 — store manager / org admin confirms the
+   * returned asset is back at the store. ``asset.status`` flips to
+   * RETURNED (terminal) and ``current_location_id`` snaps to the
+   * sack origin (or override).
+   * Backend: ``POST /sacks/{sackId}/assets/{assetId}/receive-return``.
+   */
+  receiveReturnAsset: (
+    sackId: string,
+    assetId: string,
+    payload: ReturnAssetActionPayload = {},
+  ) =>
+    apiClient
+      .post<Sack>(
+        `/sacks/${sackId}/assets/${assetId}/receive-return`,
+        payload,
+      )
+      .then((r) => r.data),
 };

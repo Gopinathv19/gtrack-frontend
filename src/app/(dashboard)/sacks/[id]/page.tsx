@@ -7,9 +7,12 @@ import {
   ArrowLeft,
   Boxes,
   Calendar,
+  CheckCircle2,
   Loader2,
   MapPin,
   Package,
+  PackageCheck,
+  Truck,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -24,9 +27,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { sacksService } from "@/services/sacks.service";
-import { SackStatus } from "@/types";
+import { AssetStatus, SackStatus } from "@/types";
 import {
   useCanManageSacks,
+  useCanMarkAssetForReturn,
+  useCanPickupReturnAsset,
+  useCanReceiveReturnAsset,
   useCanReceiveSacks,
   useCanShiftSacks,
 } from "@/hooks/use-permissions";
@@ -45,6 +51,12 @@ export default function SackDetailPage({
   const canManageSacks = useCanManageSacks();
   const canShiftSacks = useCanShiftSacks();
   const canReceiveSacks = useCanReceiveSacks();
+  // Reverse-leg per-step permissions — kept separate so each row can
+  // show only the action that's appropriate for the current user *and*
+  // the asset's current status.
+  const canMarkReturn = useCanMarkAssetForReturn();
+  const canPickupReturn = useCanPickupReturnAsset();
+  const canReceiveReturn = useCanReceiveReturnAsset();
 
   const sackQ = useQuery({
     queryKey: ["sack", id],
@@ -100,6 +112,40 @@ export default function SackDetailPage({
       invalidate();
     },
     onError: (e) => toast.error(getApiErrorMessage(e)),
+  });
+
+  // Reverse-leg mutations. Each step is its own mutation so the buttons
+  // can show independent loading states and we can key in-flight UI off
+  // ``mutation.variables`` (the asset id).
+  const markReturnMut = useMutation({
+    mutationFn: (assetId: string) =>
+      sacksService.markAssetForReturn(id, assetId),
+    onSuccess: () => {
+      toast.success("Marked for return");
+      invalidate();
+    },
+    onError: (e) =>
+      toast.error(getApiErrorMessage(e, "Could not mark for return")),
+  });
+  const pickupReturnMut = useMutation({
+    mutationFn: (assetId: string) =>
+      sacksService.pickupReturnAsset(id, assetId),
+    onSuccess: () => {
+      toast.success("Picked up for return");
+      invalidate();
+    },
+    onError: (e) =>
+      toast.error(getApiErrorMessage(e, "Could not pick up return")),
+  });
+  const receiveReturnMut = useMutation({
+    mutationFn: (assetId: string) =>
+      sacksService.receiveReturnAsset(id, assetId),
+    onSuccess: () => {
+      toast.success("Return received");
+      invalidate();
+    },
+    onError: (e) =>
+      toast.error(getApiErrorMessage(e, "Could not receive return")),
   });
 
   if (sackQ.isLoading) {
@@ -162,6 +208,7 @@ export default function SackDetailPage({
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge value={sack.status} variant="sack" />
+            <StatusBadge value={sack.lifecycle} variant="lifecycle" />
             {canShiftSacks && (
               <Button
                 size="sm"
@@ -315,6 +362,11 @@ export default function SackDetailPage({
                       <span className="ml-2 font-normal text-muted-foreground">
                         · {asset.asset_type}
                       </span>
+                      {asset.requires_return && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-medium text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                          return required
+                        </span>
+                      )}
                     </p>
                     {asset.serial_number && (
                       <p className="truncate text-xs text-muted-foreground">
@@ -323,6 +375,87 @@ export default function SackDetailPage({
                     )}
                   </div>
                   <StatusBadge value={asset.status} variant="asset" />
+                  {/* Reverse-leg actions live on the same sack — no new
+                      sack is created. Each step renders only when the
+                      asset's status matches and the caller has the role
+                      the backend expects:
+
+                        - RECEIVED          → sysadmin: Mark for return
+                        - PACKED_FOR_RETURN → shift person: Pick up
+                        - IN_TRANSIT        → store manager: Receive
+
+                      All three only apply to assets flagged
+                      `requires_return` and once the sack itself is
+                      RECEIVED. */}
+                  {sack.status === SackStatus.RECEIVED &&
+                    asset.requires_return && (
+                      <>
+                        {canMarkReturn &&
+                          asset.status === AssetStatus.RECEIVED && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => markReturnMut.mutate(asset.id)}
+                              disabled={
+                                markReturnMut.isPending &&
+                                markReturnMut.variables === asset.id
+                              }
+                              title="Sysadmin: mark this asset for return"
+                            >
+                              {markReturnMut.isPending &&
+                              markReturnMut.variables === asset.id ? (
+                                <Loader2 className="size-4 animate-spin" />
+                              ) : (
+                                <PackageCheck className="size-4" />
+                              )}
+                              Mark for return
+                            </Button>
+                          )}
+                        {canPickupReturn &&
+                          asset.status === AssetStatus.PACKED_FOR_RETURN && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => pickupReturnMut.mutate(asset.id)}
+                              disabled={
+                                pickupReturnMut.isPending &&
+                                pickupReturnMut.variables === asset.id
+                              }
+                              title="Shift person: pick up the returned asset"
+                            >
+                              {pickupReturnMut.isPending &&
+                              pickupReturnMut.variables === asset.id ? (
+                                <Loader2 className="size-4 animate-spin" />
+                              ) : (
+                                <Truck className="size-4" />
+                              )}
+                              Pick up return
+                            </Button>
+                          )}
+                        {canReceiveReturn &&
+                          asset.status === AssetStatus.IN_TRANSIT && (
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                receiveReturnMut.mutate(asset.id)
+                              }
+                              disabled={
+                                receiveReturnMut.isPending &&
+                                receiveReturnMut.variables === asset.id
+                              }
+                              title="Store manager: confirm the asset is back"
+                            >
+                              {receiveReturnMut.isPending &&
+                              receiveReturnMut.variables === asset.id ? (
+                                <Loader2 className="size-4 animate-spin" />
+                              ) : (
+                                <CheckCircle2 className="size-4" />
+                              )}
+                              Receive return
+                            </Button>
+                          )}
+                      </>
+                    )}
                   {canManageSacks && sack.status === SackStatus.CREATED && (
                     <Button
                       variant="ghost"

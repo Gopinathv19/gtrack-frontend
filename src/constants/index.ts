@@ -29,8 +29,16 @@ export const ASSET_STATUS_COLORS: Record<string, string> = {
   IN_TRANSIT: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
   DELIVERED: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
   RECEIVED: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
+  PACKED_FOR_RETURN: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
+  RETURNED: "bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300",
   DAMAGED: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
   LOST: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
+};
+
+export const SACK_LIFECYCLE_COLORS: Record<string, string> = {
+  ACTIVE: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+  PENDING_RETURN: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
+  CLOSED: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
 };
 
 export const SACK_STATUS_COLORS: Record<string, string> = {

@@ -13,6 +13,15 @@ export const assetCreateSchema = z.object({
   instance_id: z.string().uuid("Instance is required"),
   group_id: z.string().uuid("Group is required"),
   current_location_id: z.string().uuid().optional().or(z.literal("")),
+  /**
+   * Set by the store manager when this ticket is part of a swap-out
+   * flow and the old asset has to come back. When true the asset only
+   * reaches its terminal state after the return leg is RECEIVED.
+   *
+   * Note: kept as plain `boolean` (no .default()) so the resolver's
+   * input/output types stay aligned for react-hook-form.
+   */
+  requires_return: z.boolean(),
 });
 export type AssetCreateFormValues = z.infer<typeof assetCreateSchema>;
 
@@ -20,6 +29,7 @@ export const assetBulkCreateSchema = z.object({
   instance_id: z.string().uuid(),
   group_id: z.string().uuid(),
   asset_type: z.string().min(1).max(100),
+  requires_return: z.boolean(),
   tickets_raw: z
     .string()
     .min(1, "Please enter at least one ticket ID")

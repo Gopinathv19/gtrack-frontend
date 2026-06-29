@@ -27,6 +27,8 @@ export interface CreateAssetPayload {
   instance_id: string;
   group_id: string;
   current_location_id?: string | null;
+  /** Set by the store manager when this ticket needs a return leg. */
+  requires_return?: boolean;
 }
 
 export interface UpdateAssetPayload {
@@ -34,6 +36,7 @@ export interface UpdateAssetPayload {
   serial_number?: string;
   description?: string;
   current_location_id?: string | null;
+  requires_return?: boolean;
   updated_at?: string;
 }
 
@@ -42,6 +45,7 @@ export interface BulkCreateAssetsPayload {
   group_id: string;
   tickets: string[];
   asset_type: string;
+  requires_return?: boolean;
 }
 
 export interface CreateAssetMovementPayload {

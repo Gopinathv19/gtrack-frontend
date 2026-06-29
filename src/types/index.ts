@@ -9,6 +9,10 @@ export const AssetStatus = {
   IN_TRANSIT: "IN_TRANSIT",
   DELIVERED: "DELIVERED",
   RECEIVED: "RECEIVED",
+  // Reverse leg intermediate state — sysadmin has flagged this asset
+  // for return but the shift person hasn't picked it up yet.
+  PACKED_FOR_RETURN: "PACKED_FOR_RETURN",
+  RETURNED: "RETURNED",
   DAMAGED: "DAMAGED",
   LOST: "LOST",
 } as const;
@@ -21,6 +25,21 @@ export const SackStatus = {
   RECEIVED: "RECEIVED",
 } as const;
 export type SackStatus = (typeof SackStatus)[keyof typeof SackStatus];
+
+/**
+ * Derived "ticket-level" lifecycle of a sack — computed server-side.
+ * Distinct from {@link SackStatus} which only tracks the *current leg*.
+ *
+ * - ACTIVE          → forward leg in progress.
+ * - PENDING_RETURN  → forward leg done, returns outstanding.
+ * - CLOSED          → every ticket in the sack has reached its terminal.
+ */
+export const SackLifecycle = {
+  ACTIVE: "ACTIVE",
+  PENDING_RETURN: "PENDING_RETURN",
+  CLOSED: "CLOSED",
+} as const;
+export type SackLifecycle = (typeof SackLifecycle)[keyof typeof SackLifecycle];
 
 export const AssetMovementAction = {
   CREATED: "CREATED",
@@ -153,6 +172,8 @@ export interface Asset {
   group_id: string;
   current_location_id?: string | null;
   status: AssetStatus;
+  /** Set by the store manager when creating the ticket. */
+  requires_return: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -182,6 +203,8 @@ export interface Sack {
   organization_id: string;
   group_id: string;
   status: SackStatus;
+  /** Derived lifecycle (ACTIVE / PENDING_RETURN / CLOSED). */
+  lifecycle: SackLifecycle;
   created_by: string;
   /** Source / origin location assigned by the store. */
   origin_location_id?: string | null;
@@ -191,6 +214,10 @@ export interface Sack {
   destination_location_name?: string | null;
   created_by_name?: string | null;
   created_by_email?: string | null;
+  /** Total assets currently packed in the sack. */
+  asset_count: number;
+  /** Assets still waiting to be returned (only relevant when lifecycle != CLOSED). */
+  pending_return_count: number;
   created_at: string;
   updated_at: string;
 }

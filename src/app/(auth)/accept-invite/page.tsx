@@ -44,11 +44,19 @@ function AcceptInviteInner() {
     mutationFn: (v: AcceptInviteFormValues) =>
       authService.acceptInvite({ token, name: v.name, password: v.password }),
     onSuccess: (tokens) => {
-      // Backend now returns a TokenPair and sets the refresh cookie,
-      // so we can drop the new member straight into the app.
+      // Backend signs a brand-new JWT that reflects the just-joined
+      // organization (and any roles assigned by the invite). Replacing
+      // the stored access token is enough — every subsequent request
+      // will carry the updated `org_id` / `roles` claims, so an already-
+      // logged-in user who was just added to an org no longer needs to
+      // sign out and back in.
       setAccessToken(tokens.access_token);
       toast.success("Welcome aboard!");
-      router.replace(ROUTES.DASHBOARD);
+      // Hard reload the dashboard so React Query caches keyed on the
+      // previous (org-less) JWT are flushed and re-fetched against the
+      // new tenant. router.replace() alone would keep stale queries
+      // around.
+      window.location.assign(ROUTES.DASHBOARD);
     },
     onError: (err) => {
       toast.error(getApiErrorMessage(err, "Could not accept invite"));

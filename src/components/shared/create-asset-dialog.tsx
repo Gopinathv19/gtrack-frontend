@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   assetCreateSchema,
   type AssetCreateFormValues,
@@ -50,6 +51,7 @@ export function CreateAssetDialog() {
       instance_id: instanceId ?? "",
       group_id: groupId ?? "",
       current_location_id: "",
+      requires_return: false,
     },
     values: {
       ticket_id: "",
@@ -59,6 +61,7 @@ export function CreateAssetDialog() {
       instance_id: instanceId ?? "",
       group_id: groupId ?? "",
       current_location_id: "",
+      requires_return: false,
     },
   });
 
@@ -72,6 +75,7 @@ export function CreateAssetDialog() {
         instance_id: v.instance_id,
         group_id: v.group_id,
         current_location_id: v.current_location_id || null,
+        requires_return: v.requires_return,
       }),
     onSuccess: () => {
       toast.success("Asset created");
@@ -167,6 +171,34 @@ export function CreateAssetDialog() {
                     />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            {/* Return-leg flag — see CLAUDE.md / sack lifecycle.
+                When checked, the asset only "closes" after the return
+                sack is RECEIVED; the parent sack stays in PENDING_RETURN
+                until then. */}
+            <FormField
+              control={form.control}
+              name="requires_return"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start gap-3 rounded-md border p-3">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(v) => field.onChange(v === true)}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-tight">
+                    <FormLabel className="cursor-pointer">
+                      This asset will need to be returned
+                    </FormLabel>
+                    <p className="text-xs text-muted-foreground">
+                      Use this for swap-outs (e.g. delivering a new
+                      laptop and bringing the old one back). The ticket
+                      only closes once the return leg is received.
+                    </p>
+                  </div>
                 </FormItem>
               )}
             />

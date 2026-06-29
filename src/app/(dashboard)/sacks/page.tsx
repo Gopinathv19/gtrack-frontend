@@ -30,11 +30,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { sacksService } from "@/services/sacks.service";
-import { SackStatus } from "@/types";
+import { SackLifecycle, SackStatus } from "@/types";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { useDebounce } from "@/hooks/use-debounce";
 import { DEFAULT_PAGE_SIZE, ROUTES } from "@/constants";
 import { formatDateTime, truncateId } from "@/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const STATUSES: { value: SackStatus | "ALL"; label: string }[] = [
   { value: "ALL", label: "All statuses" },
@@ -44,10 +45,24 @@ const STATUSES: { value: SackStatus | "ALL"; label: string }[] = [
   })),
 ];
 
+// The "lifecycle" tabs surface the higher-level question "is this sack
+// done?" — distinct from SackStatus, which is just the current leg.
+//   - ALL              → ignore lifecycle filter entirely.
+//   - ACTIVE           → forward leg still in progress.
+//   - PENDING_RETURN   → forward done, returns outstanding.
+//   - CLOSED           → every ticket terminal.
+const LIFECYCLE_TABS: { value: "ALL" | SackLifecycle; label: string }[] = [
+  { value: "ALL", label: "All" },
+  { value: SackLifecycle.ACTIVE, label: "Active" },
+  { value: SackLifecycle.PENDING_RETURN, label: "Pending return" },
+  { value: SackLifecycle.CLOSED, label: "Closed" },
+];
+
 export default function SacksPage() {
   const { groupId } = useWorkspace();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<SackStatus | "ALL">("ALL");
+  const [lifecycle, setLifecycle] = useState<"ALL" | SackLifecycle>("ALL");
   const [ticketSearch, setTicketSearch] = useState("");
   const debouncedTicket = useDebounce(ticketSearch.trim(), 300);
 
@@ -57,6 +72,7 @@ export default function SacksPage() {
       {
         page,
         status,
+        lifecycle,
         groupId,
         ticket_id: debouncedTicket || undefined,
         per_page: DEFAULT_PAGE_SIZE,
@@ -67,6 +83,7 @@ export default function SacksPage() {
         page,
         per_page: DEFAULT_PAGE_SIZE,
         status: status === "ALL" ? undefined : status,
+        lifecycle: lifecycle === "ALL" ? undefined : lifecycle,
         group_id: groupId ?? undefined,
         ticket_id: debouncedTicket || undefined,
       }),
@@ -84,6 +101,22 @@ export default function SacksPage() {
 
       <Card>
         <CardContent className="space-y-4 pt-6">
+          <Tabs
+            value={lifecycle}
+            onValueChange={(v) => {
+              setLifecycle(v as "ALL" | SackLifecycle);
+              setPage(1);
+            }}
+          >
+            <TabsList>
+              {LIFECYCLE_TABS.map((t) => (
+                <TabsTrigger key={t.value} value={t.value}>
+                  {t.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <WorkspaceSwitcher compact />
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -133,6 +166,8 @@ export default function SacksPage() {
                   <TableRow>
                     <TableHead>Sack code</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Lifecycle</TableHead>
+                    <TableHead className="hidden md:table-cell">Assets</TableHead>
                     <TableHead className="hidden md:table-cell">Updated</TableHead>
                     <TableHead className="hidden lg:table-cell">ID</TableHead>
                   </TableRow>
@@ -150,6 +185,19 @@ export default function SacksPage() {
                       </TableCell>
                       <TableCell>
                         <StatusBadge value={s.status} variant="sack" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 whitespace-nowrap">
+                          <StatusBadge value={s.lifecycle} variant="lifecycle" />
+                          {s.lifecycle === "PENDING_RETURN" && (
+                            <span className="text-[11px] text-muted-foreground">
+                              {s.pending_return_count} pending
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
+                        {s.asset_count}
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-xs text-muted-foreground">
                         {formatDateTime(s.updated_at)}
