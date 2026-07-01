@@ -267,6 +267,7 @@ export interface JwtPayload {
   sub: string;
   org_id: string | null;
   email: string | null;
+  name: string | null;
   roles: string[];
   exp: number;
   iss?: string;

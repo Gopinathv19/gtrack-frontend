@@ -32,14 +32,17 @@ export default function RegisterPage() {
   const router = useRouter();
   const setAccessToken = useAuthStore((s) => s.setAccessToken);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: "", email: "", password: "" },
+    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
   });
 
   const mutation = useMutation({
-    mutationFn: authService.register,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    mutationFn: ({ confirmPassword: _c, ...payload }: RegisterFormValues) =>
+      authService.register(payload),
     onSuccess: (data) => {
       setAccessToken(data.access_token);
       toast.success("Account created — let's set up your workspace.");
@@ -127,6 +130,40 @@ export default function RegisterPage() {
                 <FormDescription>
                   Use 8+ characters with a mix of letters &amp; numbers.
                 </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirm password</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      type={showConfirm ? "text" : "password"}
+                      autoComplete="new-password"
+                      placeholder="Re-enter your password"
+                      {...field}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm((v) => !v)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+                      aria-label={
+                        showConfirm ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showConfirm ? (
+                        <EyeOff className="size-4" />
+                      ) : (
+                        <Eye className="size-4" />
+                      )}
+                    </button>
+                  </div>
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

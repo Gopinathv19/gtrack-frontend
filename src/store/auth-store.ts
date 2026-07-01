@@ -70,5 +70,6 @@ export function useAuth() {
     organizationId: payload?.org_id ?? null,
     userId: payload?.sub ?? null,
     email: payload?.email ?? null,
+    name: payload?.name ?? null,
   };
 }

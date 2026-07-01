@@ -33,11 +33,12 @@ function AcceptInviteInner() {
   const params = useSearchParams();
   const token = params.get("token") ?? "";
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const setAccessToken = useAuthStore((s) => s.setAccessToken);
 
   const form = useForm<AcceptInviteFormValues>({
     resolver: zodResolver(acceptInviteSchema),
-    defaultValues: { name: "", password: "" },
+    defaultValues: { name: "", password: "", confirmPassword: "" },
   });
 
   const mutation = useMutation({
@@ -128,6 +129,38 @@ function AcceptInviteInner() {
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? (
+                        <EyeOff className="size-4" />
+                      ) : (
+                        <Eye className="size-4" />
+                      )}
+                    </button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirm password</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      type={showConfirm ? "text" : "password"}
+                      autoComplete="new-password"
+                      placeholder="Re-enter your password"
+                      {...field}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirm((v) => !v)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+                      aria-label={showConfirm ? "Hide password" : "Show password"}
+                    >
+                      {showConfirm ? (
                         <EyeOff className="size-4" />
                       ) : (
                         <Eye className="size-4" />

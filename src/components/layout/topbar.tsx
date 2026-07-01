@@ -30,10 +30,11 @@ import { authService } from "@/services/auth.service";
 import { ROUTES } from "@/constants";
 
 export function Topbar() {
-  const { email } = useAuth();
+  const { email, name } = useAuth();
   const clear = useAuthStore((s) => s.clear);
   const setCommandOpen = useUiStore((s) => s.setCommandOpen);
   const router = useRouter();
+  const displayName = name ?? email?.split("@")[0] ?? "User";
 
   const onLogout = async () => {
     try {
@@ -105,7 +106,7 @@ export function Topbar() {
               aria-label="User menu"
             >
               <Avatar>
-                <AvatarFallback>{getInitials(email ?? "User")}</AvatarFallback>
+                <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
@@ -115,7 +116,10 @@ export function Topbar() {
                 <span className="text-xs font-normal text-muted-foreground">
                   Signed in as
                 </span>
-                <span className="truncate">{email ?? "—"}</span>
+                <span className="truncate">{displayName}</span>
+                <span className="truncate text-xs font-normal text-muted-foreground">
+                  {email ?? "—"}
+                </span>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />

@@ -45,8 +45,7 @@ export default function AuthLayout({
           </div>
           <blockquote className="max-w-md space-y-4">
             <p className="text-2xl font-medium leading-snug">
-              “We moved 18,000 tickets last quarter without losing a single sack.
-              Gtrack&apos;s state machine quite literally pays for itself.”
+              “Track your tickets seamlessly with Gtrack. No more lost assets, no more headaches. Just keep shipping in a faster and more efficient way.”
             </p>
             <footer className="text-sm text-white/80">
               — Operations Lead, regional logistics partner

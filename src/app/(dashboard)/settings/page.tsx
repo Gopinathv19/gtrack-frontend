@@ -23,8 +23,10 @@ import { useWorkspace } from "@/hooks/use-workspace";
 import { getInitials, truncateId } from "@/lib/utils";
 
 export default function SettingsPage() {
-  const { email, userId, roles, organizationId: jwtOrgId } = useAuth();
+  const { email, name, userId, roles, organizationId: jwtOrgId } = useAuth();
   const { organizationId } = useWorkspace();
+  const displayName = name;
+  // const displayName = name ?? email?.split("@")[0] ?? "—";
   // Only users who don't yet belong to an organization can create one.
   // (The backend rejects org creation for users who already have one.)
   const canCreateOrg = !jwtOrgId;
@@ -67,10 +69,10 @@ export default function SettingsPage() {
             <CardContent className="space-y-6">
               <div className="flex items-center gap-4">
                 <Avatar className="size-14">
-                  <AvatarFallback>{getInitials(email ?? "U")}</AvatarFallback>
+                  <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
                 </Avatar>
                 <div className="space-y-0.5">
-                  <p className="font-medium">{email ?? "—"}</p>
+                  <p className="font-medium">{displayName}</p>
                   <p className="font-mono text-xs text-muted-foreground">
                     {userId ? truncateId(userId) : "—"}
                   </p>

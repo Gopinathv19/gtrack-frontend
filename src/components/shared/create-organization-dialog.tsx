@@ -31,7 +31,9 @@ import {
   organizationCreateSchema,
   type OrganizationCreateFormValues,
 } from "@/schemas/organization.schema";
+import { authService } from "@/services/auth.service";
 import { organizationsService } from "@/services/organizations.service";
+import { useAuthStore } from "@/store/auth-store";
 import { useWorkspaceStore } from "@/store/workspace-store";
 import { getApiErrorMessage } from "@/lib/api-client";
 import type { Organization } from "@/types";
@@ -58,6 +60,7 @@ export function CreateOrganizationDialog({
   const [open, setOpen] = useState(false);
   const qc = useQueryClient();
   const setOrganization = useWorkspaceStore((s) => s.setOrganization);
+  const setAccessToken = useAuthStore((s) => s.setAccessToken);
 
   const form = useForm<OrganizationCreateFormValues>({
     resolver: zodResolver(organizationCreateSchema),
@@ -65,10 +68,26 @@ export function CreateOrganizationDialog({
   });
 
   const mutation = useMutation({
-    mutationFn: organizationsService.create,
+    mutationFn: async (values: OrganizationCreateFormValues) => {
+      const org = await organizationsService.create(values);
+      // The user's org_id and ORG_ADMIN role are now set server-side, but
+      // the JWT we're holding was issued *before* that change. Rotate the
+      // token pair so the new claims (org_id, roles) are reflected in
+      // every subsequent request — otherwise the user would have to sign
+      // out and back in to see their new role/org.
+      try {
+        const tokens = await authService.refresh();
+        setAccessToken(tokens.access_token);
+      } catch {
+        // Non-fatal: the next 401 will trigger the axios refresh interceptor.
+      }
+      return org;
+    },
     onSuccess: (org) => {
       toast.success("Organization created");
       qc.invalidateQueries({ queryKey: ["organizations"] });
+      // Also flush caches keyed against the previous (org-less) JWT.
+      qc.invalidateQueries();
       // Switch the active workspace to the newly created org.
       setOrganization(org.id);
       onCreated?.(org);

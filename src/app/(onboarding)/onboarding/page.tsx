@@ -32,8 +32,10 @@ import {
   organizationCreateSchema,
   type OrganizationCreateFormValues,
 } from "@/schemas/organization.schema";
+import { authService } from "@/services/auth.service";
 import { organizationsService } from "@/services/organizations.service";
 import { useAuthGuard } from "@/hooks/use-auth-guard";
+import { useAuthStore } from "@/store/auth-store";
 import { useWorkspaceStore } from "@/store/workspace-store";
 import { getApiErrorMessage } from "@/lib/api-client";
 import { ROUTES } from "@/constants";
@@ -50,6 +52,7 @@ export default function OnboardingPage() {
   const setOrganization = useWorkspaceStore((s) => s.setOrganization);
   const setInstance = useWorkspaceStore((s) => s.setInstance);
   const setGroup = useWorkspaceStore((s) => s.setGroup);
+  const setAccessToken = useAuthStore((s) => s.setAccessToken);
   const [step, setStep] = useState(0);
   const [createdIds, setCreatedIds] = useState<{
     org?: string;
@@ -68,7 +71,21 @@ export default function OnboardingPage() {
   });
 
   const orgMut = useMutation({
-    mutationFn: organizationsService.create,
+    mutationFn: async (values: OrganizationCreateFormValues) => {
+      const org = await organizationsService.create(values);
+      // The user's org_id and ORG_ADMIN role were just set on the server,
+      // but our access token still carries the pre-org claims. Rotate the
+      // token so subsequent onboarding calls (create instance / group) run
+      // under the new tenant and role — otherwise the user would have to
+      // sign out and back in for the JWT to reflect their new membership.
+      try {
+        const tokens = await authService.refresh();
+        setAccessToken(tokens.access_token);
+      } catch {
+        // Non-fatal; the axios 401 interceptor will refresh lazily.
+      }
+      return org;
+    },
     onSuccess: (org) => {
       setCreatedIds((s) => ({ ...s, org: org.id }));
       setOrganization(org.id);
